@@ -1,21 +1,18 @@
 import models.ChessMatch;
 
-import java.io.RandomAccessFile;
 import java.util.Scanner;
 
 public class Main {
     private static final Scanner scanner = new Scanner(System.in);
-    private static final String fileName = System.getProperty("user.dir") + "\\src\\chessStats.csv";
-    private static final String primaryKeyIndexFileName = System.getProperty("user.dir") + "\\src\\pkindex.csv";
-    private static final int dataFileLineSize = 40;
-    private static final PKIndexer indexer = new PKIndexer(fileName, primaryKeyIndexFileName, dataFileLineSize);
+    private static final String FILE_NAME = System.getProperty("user.dir") + "\\src\\chessStats.csv";
+    private static final String PRIMARY_KEY_INDEX_FILE_NAME = System.getProperty("user.dir") + "\\src\\pkindex.csv";
+    private static final int DATA_FILE_LINE_SIZE = 40;
+    private static final PKIndexer pkIndexer = new PKIndexer(FILE_NAME, PRIMARY_KEY_INDEX_FILE_NAME, DATA_FILE_LINE_SIZE);
 
     public static void main(String[] args) {
-//        File indexFile = new File(primaryKeyIndexFileName);
-//        indexFile.delete();
+        int action;
 
-        RandomAccessFile pkIndex = indexer.loadPrimaryKeyIndex();
-        int action = 0;
+        pkIndexer.loadPrimaryKeyIndex();
 
         do {
             System.out.println("Qual ação você deseja executar?");
@@ -28,19 +25,17 @@ public class Main {
             if (action == 1) {
                 searchByPk();
             } else if (action == 9) {
-                indexer.loadPrimaryKeyIndex(true);
+                pkIndexer.loadPrimaryKeyIndex(true);
             } else {
                 System.err.println("Ação não reconhecida");
             }
         } while (action != 0);
-
-        System.out.println("a");
     }
 
     private static void searchByPk() {
         System.out.println("Digite o código do registro a ser procurado");
         long code = scanner.nextLong();
-        ChessMatch chessMatchData = indexer.findByPk(code);
+        ChessMatch chessMatchData = pkIndexer.findByPk(code);
         System.out.println(chessMatchData == null ? "Dado não encontrado" : "Dado encontrado:\n" + chessMatchData);
     }
 }
