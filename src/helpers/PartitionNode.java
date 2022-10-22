@@ -53,7 +53,7 @@ public class PartitionNode {
         }
     }
 
-    public void refreshIf (final long idToRefresh) throws TDEException, IOException {
+    public void refreshIfEqualTo(final long idToRefresh) throws TDEException, IOException {
         if (this.leaf) {
             if (this.id != idToRefresh) {
                 throw new TDEException("Folha errada!");
@@ -65,15 +65,19 @@ public class PartitionNode {
                 this.partitionIndex++;
                 this.file.seek(this.partitionInitalAddress + this.partitionIndex * this.lineSize);
                 String l = this.file.readLine();
-                this.line = l;
-                this.id = TdeUtils.extractId(l);
+                if (line != null) {
+                    this.line = l;
+                    this.id = TdeUtils.extractId(l);
+                } else {
+                    this.id = Long.MAX_VALUE;
+                }
             }
         } else {
             if (this.left.getId() == idToRefresh) {
-                this.left.refreshIf(idToRefresh);
+                this.left.refreshIfEqualTo(idToRefresh);
                 this.left.getSmallest();
             } else if (this.right.getId() == idToRefresh) {
-                this.right.refreshIf(idToRefresh);
+                this.right.refreshIfEqualTo(idToRefresh);
                 this.left.getSmallest();
             } else {
                 throw new TDEException("O id para atualizar não está nesse nodo!");
