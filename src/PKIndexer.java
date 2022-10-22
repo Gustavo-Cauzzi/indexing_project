@@ -1,14 +1,15 @@
 import exceptions.TDEException;
-import helpers.IndexLineDTO;
 import helpers.PartitionNode;
 import models.ChessMatch;
 import models.PkIndex;
-import utils.TdeUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.LongStream;
 
 public class PKIndexer {
@@ -38,11 +39,11 @@ public class PKIndexer {
         return sb.toString();
     }
 
-    public RandomAccessFile loadPrimaryKeyIndex() {
+    public List<PkIndex> loadPrimaryKeyIndex() {
         return this.loadPrimaryKeyIndex(false);
     }
 
-    public RandomAccessFile loadPrimaryKeyIndex(boolean forceReexec) {
+    public List<PkIndex> loadPrimaryKeyIndex(boolean forceReexec) {
         try {
             File indexFile = new File(this.primaryKeyIndexFileName);
 
@@ -54,12 +55,25 @@ public class PKIndexer {
                 this.populatePrimaryIndexFile();
             }
 
-            return new RandomAccessFile(indexFile, "r");
+            System.out.println("Construindo arquivo de índice primário em memória");
+            try (RandomAccessFile indexFileReader = new RandomAccessFile(indexFile, "r")) {
+                List<PkIndex> pkIndex = new ArrayList<>();
+                this.iterateOverFile(indexFileReader, line -> pkIndex.add(new PkIndex(line)));
+                return pkIndex;
+            }
         } catch (IOException | TDEException e) {
             System.err.println("Não foi possível abrir o arquivo de índice primário");
             e.printStackTrace();
-            return null;
+            return Collections.emptyList();
         }
+    }
+
+    private void iterateOverFile(RandomAccessFile indexFileReader, Consumer<String> consumer) throws IOException {
+        String line;
+        do {
+            line = indexFileReader.readLine();
+            if (line != null) consumer.accept(line);
+        } while (line != null);
     }
 
     private void populatePrimaryIndexFile() throws IOException, TDEException {
@@ -114,8 +128,9 @@ public class PKIndexer {
             System.out.println("Gerando árvore para junção de partições no arquivo de índice primário");
             PartitionNode root = new PartitionNode(indexFileLineSize, PARTITION_SIZE, addresses, indexTmpFile);
 
+            System.out.println("Calculando indíces ordenados e guardando no arquivo");
             for (int i = 0; i < lineQtd; i++) {
-                IndexLineDTO smallest = root.getSmallest();
+                PkIndex smallest = root.getSmallest();
                 indexFile.write(smallest.getLine().getBytes());
                 root.refreshIfEqualTo(smallest.getId());
             }
@@ -137,17 +152,16 @@ public class PKIndexer {
         return line.length();
     }
 
-    public ChessMatch findByPk(long code) {
+    public ChessMatch findByPk(long code, List<PkIndex> indexList) {
         try (RandomAccessFile dataFile = new RandomAccessFile(dataFileName, "r"); RandomAccessFile indexFile = new RandomAccessFile(this.primaryKeyIndexFileName, "r")) {
-            long lineQtd = indexFile.length() / this.indexFileLineSize;
+            int lineQtd = (int) (indexFile.length() / this.indexFileLineSize);
 
-            String indexLine = this.binarySearch(indexFile, 0L, lineQtd - 1, code);
+            PkIndex index = this.binarySearch(indexList, 0, lineQtd, code);
 
-            if (indexLine == null) {
+            if (index == null) {
                 return null;
             }
 
-            PkIndex index = new PkIndex(indexLine);
             dataFile.seek(index.getAddress());
             String dataLine = dataFile.readLine();
             if (dataLine == null) {
@@ -161,21 +175,19 @@ public class PKIndexer {
         }
     }
 
-    private String binarySearch(RandomAccessFile f, long start, long end, long idToSearch) throws IOException {
+    private PkIndex binarySearch(List<PkIndex> indexList, int start, int end, long idToSearch) throws IOException {
         if (end >= start) {
-            long mid = start + (end - start) / 2;
+            int mid = start + (end - start) / 2;
             System.out.printf("Pesquisa binária de %d a %d (mid: %d)%n", start, end, mid);
 
-            f.seek(mid * indexFileLineSize);
-            String positionContent = f.readLine();
-            long id = TdeUtils.extractId(positionContent);
+            PkIndex data = indexList.get(mid);
 
-            if (id == idToSearch) {
-                return positionContent;
-            } else if (id > idToSearch) {
-                return binarySearch(f, start, mid - 1, idToSearch);
+            if (data.getId() == idToSearch) {
+                return data;
+            } else if (data.getId() > idToSearch) {
+                return binarySearch(indexList, start, mid - 1, idToSearch);
             } else {
-                return binarySearch(f, mid + 1, end, idToSearch);
+                return binarySearch(indexList, mid + 1, end, idToSearch);
             }
         }
 

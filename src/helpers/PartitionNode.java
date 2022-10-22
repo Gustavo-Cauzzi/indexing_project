@@ -1,6 +1,7 @@
 package helpers;
 
 import exceptions.TDEException;
+import models.PkIndex;
 import utils.TdeUtils;
 
 import java.io.IOException;
@@ -40,13 +41,13 @@ public class PartitionNode {
         }
     }
 
-    public IndexLineDTO getSmallest () {
+    public PkIndex getSmallest () throws TDEException {
         if (this.leaf) {
-            return new IndexLineDTO(this.id, this.line);
+            return new PkIndex(this.line);
         } else {
-            IndexLineDTO smallestLeft = this.left.getSmallest();
-            IndexLineDTO smallestRight = this.right.getSmallest();
-            IndexLineDTO smallest = smallestRight.getId() < smallestLeft.getId() ? smallestRight : smallestLeft;
+            PkIndex smallestLeft = this.left.getSmallest();
+            PkIndex smallestRight = this.right.getSmallest();
+            PkIndex smallest = smallestRight.getId() < smallestLeft.getId() ? smallestRight : smallestLeft;
             this.id = smallest.getId();
             this.line = smallest.getLine();
             return smallest;

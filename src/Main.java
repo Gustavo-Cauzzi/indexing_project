@@ -1,5 +1,7 @@
 import models.ChessMatch;
+import models.PkIndex;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -12,7 +14,7 @@ public class Main {
     public static void main(String[] args) {
         int action;
 
-        pkIndexer.loadPrimaryKeyIndex();
+        List<PkIndex> pkIndex = pkIndexer.loadPrimaryKeyIndex();
 
         do {
             System.out.println("Qual ação você deseja executar?");
@@ -23,7 +25,7 @@ public class Main {
             action = scanner.nextInt();
 
             if (action == 1) {
-                searchByPk();
+                searchByPk(pkIndex);
             } else if (action == 9) {
                 pkIndexer.loadPrimaryKeyIndex(true);
             } else {
@@ -32,10 +34,10 @@ public class Main {
         } while (action != 0);
     }
 
-    private static void searchByPk() {
+    private static void searchByPk(List<PkIndex> pkIndex) {
         System.out.println("Digite o código do registro a ser procurado");
         long code = scanner.nextLong();
-        ChessMatch chessMatchData = pkIndexer.findByPk(code);
+        ChessMatch chessMatchData = pkIndexer.findByPk(code, pkIndex);
         System.out.println(chessMatchData == null ? "Dado não encontrado" : "Dado encontrado:\n" + chessMatchData);
     }
 }
