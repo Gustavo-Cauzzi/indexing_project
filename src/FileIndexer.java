@@ -89,15 +89,6 @@ public class FileIndexer {
         }
     }
 
-    private long getLineSize(RandomAccessFile dataFile) throws IOException {
-        long aux = dataFile.getFilePointer();
-        dataFile.seek(0);
-        dataFile.readLine();
-        long lineSize = dataFile.getFilePointer();
-        dataFile.seek(aux);
-        return lineSize;
-    }
-
     public Optional<ChessMatch> findByPk(long code, List<PkIndex> indexList) {
         try (RandomAccessFile dataFile = new RandomAccessFile(dataFileName, "r"); RandomAccessFile indexFile = new RandomAccessFile(PRIMARY_KEY_INDEX_FILE_NAME, "r")) {
             int indexFileLineSize = 19;

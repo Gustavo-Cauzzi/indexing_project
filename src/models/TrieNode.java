@@ -6,14 +6,12 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public class TrieNode {
-    private boolean isRoot = false;
     private Character c;
     private boolean isWord = false;
     private int numberOfRepetitions = 0;
-    private Map<Character, TrieNode> childrenNodes = new HashMap<>();
+    private final Map<Character, TrieNode> childrenNodes = new HashMap<>();
 
     public TrieNode() {
-        this.isRoot = true;
     }
 
     public TrieNode(char c) {
@@ -52,8 +50,8 @@ public class TrieNode {
 
     public Optional<WinnersDTO> find(String name) {
         TrieNode acc = this;
-        for (Character c : name.toCharArray()) {
-            TrieNode trieNode = acc.childrenNodes.get(c);
+        for (Character ch : name.toCharArray()) {
+            TrieNode trieNode = acc.childrenNodes.get(ch);
             if (trieNode == null) {
                 return Optional.empty();
             }
@@ -65,14 +63,6 @@ public class TrieNode {
         }
 
         return Optional.empty();
-    }
-
-    public boolean isRoot() {
-        return isRoot;
-    }
-
-    public void setRoot(boolean root) {
-        isRoot = root;
     }
 
     public Character getC() {
@@ -103,7 +93,4 @@ public class TrieNode {
         return childrenNodes;
     }
 
-    public void setChildrenNodes(Map<Character, TrieNode> childrenNodes) {
-        this.childrenNodes = childrenNodes;
-    }
 }
