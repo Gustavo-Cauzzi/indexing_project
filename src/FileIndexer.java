@@ -5,18 +5,17 @@ import models.PkIndex;
 import utils.TdeUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class FileIndexers {
+public class FileIndexer {
     private final String dataFileName;
     private static final String PRIMARY_KEY_INDEX_FILE_NAME = System.getProperty("user.dir") + "\\src\\data\\pkIndex.csv";
     private static final String PLAYER_INDEX_FILE_NAME = System.getProperty("user.dir") + "\\src\\data\\playerIndex.csv";
 
-    public FileIndexers(String fileName) {
+    public FileIndexer(String fileName) {
         this.dataFileName = fileName;
     }
 
@@ -46,7 +45,7 @@ public class FileIndexers {
                     throw new TDEException("Não foi possível criar o arquivo de índice de chave primária");
                 }
 
-                this.populatePrimaryIndexFile();
+                return this.populatePrimaryIndexFile();
             }
 
             System.out.println("Lendo arquivo de índice primário");
@@ -62,13 +61,12 @@ public class FileIndexers {
         }
     }
 
-    private void populatePrimaryIndexFile() throws IOException {
+    private List<PkIndex> populatePrimaryIndexFile() throws IOException {
         System.out.println("Criando arquivo de índice primário");
 
         try (RandomAccessFile dataFile = new RandomAccessFile(dataFileName, "r"); RandomAccessFile indexFile = new RandomAccessFile(PRIMARY_KEY_INDEX_FILE_NAME, "rw")) {
             List<String> index = new ArrayList<>();
-            long lineSize = this.getLineSize(dataFile);
-            TdeUtils.iterateOverFile(dataFile, line -> {
+            TdeUtils.iterateOverFile(dataFile, (line, lineSize) -> {
                 try {
                     index.add(TdeUtils.extractId(line) + "," + padLeftZeros(String.valueOf(dataFile.getFilePointer() - lineSize), 10));
                 } catch (IOException e) {
@@ -76,13 +74,18 @@ public class FileIndexers {
                 }
             });
 
-            index.stream().sorted(Comparator.comparing(TdeUtils::extractId)).forEach(line -> {
-                try {
-                    indexFile.write((line + "\n").getBytes());
-                } catch (IOException e) {
-                    throw new TDERuntimeException(e);
-                }
-            });
+            return index.stream()
+                .sorted(Comparator.comparing(TdeUtils::extractId))
+                .map(line -> {
+                    try {
+                        indexFile.write((line + "\n").getBytes());
+                        return line;
+                    } catch (IOException e) {
+                        throw new TDERuntimeException(e);
+                    }
+                })
+                .map(PkIndex::new)
+                .toList();
         }
     }
 
@@ -139,11 +142,15 @@ public class FileIndexers {
     }
 
     public Map<String, List<String>> loadPlayerMatchesIndex() {
+        return this.loadPlayerMatchesIndex(false);
+    }
+
+    public Map<String, List<String>> loadPlayerMatchesIndex(boolean force) {
         File playerIndex = new File(PLAYER_INDEX_FILE_NAME);
 
         try {
-            if (!playerIndex.exists()) {
-                if (!playerIndex.createNewFile()) {
+            if (force || !playerIndex.exists()) {
+                if (!force && !playerIndex.createNewFile()) {
                     throw new TDEException("Não foi possível criar o arquivo de índice de partidas do jogador");
                 }
 
@@ -173,8 +180,7 @@ public class FileIndexers {
 
         HashMap<String, List<String>> playerAddressesMap = new HashMap<>();
         try (RandomAccessFile playerIndex = new RandomAccessFile(PLAYER_INDEX_FILE_NAME, "rw"); RandomAccessFile dataFile = new RandomAccessFile(dataFileName, "r")) {
-            long lineSize = this.getLineSize(dataFile);
-            TdeUtils.iterateOverFile(dataFile, line -> {
+            TdeUtils.iterateOverFile(dataFile, (line, lineSize) -> {
                 try {
                     String[] split = line.split(",");
                     String name = split[split.length - 1].trim();

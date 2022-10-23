@@ -1,2 +1,4 @@
 /out
 /.idea/sonarlint
+/src/data/pkIndex.csv
+/src/data/playerIndex.csv

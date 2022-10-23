@@ -5,8 +5,9 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.ObjLongConsumer;
 
 public class TdeUtils {
     private TdeUtils(){}
@@ -31,15 +32,20 @@ public class TdeUtils {
     }
 
     public static void iterateOverFile(RandomAccessFile file, Consumer<String> consumer) throws IOException {
+        iterateOverFile(file, (line, lineSize) -> consumer.accept(line));
+    }
+
+    public static void iterateOverFile(RandomAccessFile file, ObjLongConsumer<String> consumer) throws IOException {
         String line;
         do {
+            long initialFp = file.getFilePointer();
             line = file.readLine();
-            if (line != null) consumer.accept(line);
+            if (line != null) consumer.accept(line, file.getFilePointer() - initialFp);
         } while (line != null);
     }
 
     public enum MATCH_RESULT {
-        WHITE('w', "White"), BLACK('b', "Black"), DRAW('d', "Draw"), UNKNOWN('u', "Unknown");
+        WHITE('w', "White"), BLACK('b', "Black"), DRAW('d', "Draw"), RESIGN('r', "Resign"), UNKNOWN('u', "Unknown");
         private final Character code;
         private final String result;
 
