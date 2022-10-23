@@ -1,7 +1,6 @@
-package helpers;
+package models;
 
 import exceptions.TDEException;
-import models.PkIndex;
 import utils.TdeUtils;
 
 import java.io.IOException;
@@ -41,13 +40,13 @@ public class PartitionNode {
         }
     }
 
-    public PkIndex getSmallest () throws TDEException {
+    public PkIndex getSmallest () {
         if (this.leaf) {
             return new PkIndex(this.line);
         } else {
             PkIndex smallestLeft = this.left.getSmallest();
             PkIndex smallestRight = this.right.getSmallest();
-            PkIndex smallest = smallestRight.getId() < smallestLeft.getId() ? smallestRight : smallestLeft;
+            PkIndex smallest = smallestRight.getId().compareTo(smallestLeft.getId()) < 0 ? smallestRight : smallestLeft;
             this.id = smallest.getId();
             this.line = smallest.getLine();
             return smallest;
@@ -81,7 +80,7 @@ public class PartitionNode {
                 this.right.refreshIfEqualTo(idToRefresh);
                 this.left.getSmallest();
             } else {
-                throw new TDEException("O id para atualizar não está nesse nodo!");
+                throw new TDEException("O id para atualizar não está nesse nodo! " + idToRefresh);
             }
         }
     }

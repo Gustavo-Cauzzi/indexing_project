@@ -1,21 +1,14 @@
 package models;
 
 import exceptions.TDEException;
+import utils.TdeUtils;
 
 public class ChessMatch {
     private Long id;
-    private String winner;
+    private TdeUtils.MATCH_RESULT winner;
     private Integer winnerRating;
     private Integer loserRating;
     private String winnerUsername;
-
-    public ChessMatch(Long id, String winner, Integer winnerRating, Integer loserRating, String username) {
-        this.id = id;
-        this.winner = winner;
-        this.winnerRating = winnerRating;
-        this.loserRating = loserRating;
-        this.winnerUsername = username;
-    }
 
     public ChessMatch(String line) throws TDEException {
         String[] split = line.split(",");
@@ -23,7 +16,7 @@ public class ChessMatch {
         if (split.length != 5) throw new TDEException("Formato inválido");
 
         this.id = Long.parseLong(split[0]);
-        this.winner = split[1];
+        this.winner = TdeUtils.MATCH_RESULT.getResult(split[1]);
         this.winnerRating = Integer.parseInt(split[2]);
         this.loserRating = Integer.parseInt(split[3]);
         this.winnerUsername = split[4].trim();
@@ -37,11 +30,11 @@ public class ChessMatch {
         this.id = id;
     }
 
-    public String getWinner() {
+    public TdeUtils.MATCH_RESULT getWinner() {
         return winner;
     }
 
-    public void setWinner(String winner) {
+    public void setWinner(TdeUtils.MATCH_RESULT winner) {
         this.winner = winner;
     }
 
@@ -73,7 +66,7 @@ public class ChessMatch {
     public String toString() {
         return "ChessMatch{" +
                 "id=" + id +
-                ", winner='" + winner + '\'' +
+                ", winner='" + winner.getResult() + '\'' +
                 ", winnerRating=" + winnerRating +
                 ", loserRating=" + loserRating +
                 ", winnerUsername='" + winnerUsername + '\'' +
